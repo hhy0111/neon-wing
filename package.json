@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "web": "node web/server.js",
+    "web:test": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-gameplay.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-game",
+    "web:test:exit": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-exit.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-exit",
+    "web:test:hangar": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-hangar.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-hangar",
+    "web:test:magnet": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-magnet.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-magnet",
+    "web:test:missile-upgrade": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-missile-upgrade.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-missile-upgrade",
+    "web:test:ship-list": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-ship-list.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-ship-list",
+    "web:test:ships": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-ships.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-ships",
+    "web:test:leaderboard": "node --experimental-default-type=module C:/Users/hhy01/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:5173 --actions-file web/test-actions-leaderboard.json --iterations 1 --pause-ms 150 --screenshot-dir output/web-leaderboard"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
+  }
+}

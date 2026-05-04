@@ -1,0 +1,17 @@
+.gradle/
+build/
+app/build/
+*.iml
+.idea/
+local.properties
+node_modules/
+output/
+*.keystore
+*.jks
+*.p12
+*.env
+
+# Android Studio generated files
+captures/
+.externalNativeBuild/
+.cxx/
