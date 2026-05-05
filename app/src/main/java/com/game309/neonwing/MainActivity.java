@@ -18,6 +18,7 @@ public class MainActivity extends Activity {
     private NeonWingView gameView;
     private GameRepository repository;
     private AdsGateway adsGateway;
+    private BillingGateway billingGateway;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +30,7 @@ public class MainActivity extends Activity {
 
         repository = new GameRepository(this);
         adsGateway = new AdsGateway(this);
-        BillingGateway billingGateway = new BillingGateway(this, repository);
+        billingGateway = new BillingGateway(this, repository);
         gameView = new NeonWingView(this, repository, adsGateway, billingGateway);
         gameView.setScreenListener(screenName ->
                 adsGateway.setHangarBannerVisible("HANGAR".equals(screenName) && !repository.hasRemovedAds()));
@@ -57,6 +58,9 @@ public class MainActivity extends Activity {
             adsGateway.onResume();
             adsGateway.showAppOpenIfAvailable(repository != null && repository.hasRemovedAds());
         }
+        if (billingGateway != null) {
+            billingGateway.refreshPurchases();
+        }
     }
 
     @Override
@@ -74,6 +78,9 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         if (adsGateway != null) {
             adsGateway.destroy();
+        }
+        if (billingGateway != null) {
+            billingGateway.destroy();
         }
         super.onDestroy();
     }

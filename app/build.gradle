@@ -2,6 +2,15 @@ plugins {
     id "com.android.application"
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+def releaseStoreFilePath = localProperties.getProperty("release.storeFile")
+def hasReleaseSigning = releaseStoreFilePath != null && rootProject.file(releaseStoreFilePath).exists()
+
 android {
     namespace "com.game309.neonwing"
     compileSdk 35
@@ -10,12 +19,23 @@ android {
         applicationId "com.game309.neonwing"
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 3
+        versionName "0.1.1"
     }
 
     buildFeatures {
         buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            if (releaseStoreFilePath != null) {
+                storeFile rootProject.file(releaseStoreFilePath)
+            }
+            storePassword localProperties.getProperty("release.storePassword", "")
+            keyAlias localProperties.getProperty("release.keyAlias", "neonwing")
+            keyPassword localProperties.getProperty("release.keyPassword", "")
+        }
     }
 
     buildTypes {
@@ -24,6 +44,9 @@ android {
             versionNameSuffix "-debug"
         }
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
@@ -32,4 +55,5 @@ android {
 
 dependencies {
     implementation "com.google.android.gms:play-services-ads:25.2.0"
+    implementation "com.android.billingclient:billing:8.3.0"
 }

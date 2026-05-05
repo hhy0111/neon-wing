@@ -105,6 +105,10 @@ public class GameRepository {
         return prefs.getBoolean(KEY_SUPPLY_PASS, false);
     }
 
+    public void setSupplyPassActive(boolean active) {
+        prefs.edit().putBoolean(KEY_SUPPLY_PASS, active).apply();
+    }
+
     public void addCoins(int amount) {
         prefs.edit().putInt(KEY_COINS, Math.max(0, getCoins() + amount)).apply();
     }

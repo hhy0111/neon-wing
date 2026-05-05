@@ -237,3 +237,63 @@ Original prompt: 웹으로 게임 테스트 하고 싶어 환경 만들어줘
   - Playwright splash screenshot in `output/web-splash/shot-0.png` confirms the opening screen.
   - Gameplay Playwright flow passes after clicking through the splash screen.
   - `.\gradlew.bat :app:assembleDebug :app:lintDebug --no-daemon` passes, lint reports no issues.
+
+## 2026-05-05 Upgrade Fallback Reward Pass
+
+- Fixed the web upgrade overlay blank-state in `web/game.js`.
+- When every sortie-only upgrade is already at max, `buildUpgradeChoices()` now returns three fallback reward choices instead of an empty array:
+  - score bonus,
+  - coin bonus,
+  - mixed score/coin salvage bonus.
+- Reward choices are handled separately from stack-based upgrades, update score/save data immediately, and no longer render a fake `Lv.N` line.
+- Updated `render_game_to_text` so upgrade choices include `reward` payloads for QA visibility.
+- Verified:
+  - `node --check web\game.js` passes.
+  - `npm run web:test` produced a fresh `output/web-game/shot-0.png` and `state-0.json`; the client timed out during shutdown again, but the gameplay upgrade overlay rendered correctly and assets/state output were refreshed.
+- Note:
+  - The exact "all upgrades exhausted" case was verified from the new source path (`available.length === 0` and empty weighted fallback) rather than a full automated endgame run, because exhausting the entire upgrade pool through Playwright is too slow for the current harness.
+
+## 2026-05-05 Missile Balance and Premium Challenge Pass
+
+- Slightly reduced baseline missile output in web and Android:
+  - lowered the permanent missile base damage formula,
+  - reduced secondary missile lane damage a bit,
+  - reduced mini-missile damage a bit.
+- Added a ship-specific `challenge` bonus on web for purchased higher-tier ships so stronger ships keep their premium feel while enemy pressure rises with them.
+  - Applied as a small increase to normal enemy HP scaling, elite HP scaling, wave density chance, and spawn/elite timer pressure.
+- Mirrored the same intent on Android with an Astra-owned premium challenge bonus and a small missile cadence/damage reduction.
+- Added `ship.challenge` to web `render_game_to_text` for QA visibility.
+- Added `web/test-actions-premium-balance.json` for a premium-ship balance scenario, though the generic Playwright client remained unreliable for that menu-heavy route on this machine.
+- Verified:
+  - `node --check web\game.js` passes.
+  - `.\gradlew.bat :app:assembleDebug :app:lintDebug --no-daemon` reports `BUILD SUCCESSFUL`.
+  - `npm run web:test` still times out during Playwright shutdown, but it refreshed `output/web-game/shot-0.png` and `state-0.json`.
+  - Ran an additional targeted Playwright script using the installed skill runtime to inject save data and compare:
+    - `output/web-balance/default-neon-wing.json`
+    - `output/web-balance/premium-astra.json`
+    - matching screenshots in the same folder.
+
+## 2026-05-05 Release AAB Build
+
+- Verified release signing config is present in `local.properties` and the upload key exists at `release/neonwing-upload-key.jks`.
+- Built a signed release Android App Bundle with:
+  - `.\gradlew.bat :app:bundleRelease --no-daemon`
+- Copied the fresh bundle to:
+  - `release/NeonWing-v0.1.1-code2-release-20260505.aab`
+- SHA-256:
+  - `9B0414D959B9ECDF431EFFB8A7612632303DE45F7B526111D4427249F68728A0`
+- Note:
+  - Current app version is still `versionCode 2`, `versionName 0.1.1`. If code 2 has already been uploaded to Play Console before, the next store upload will require a higher `versionCode`.
+
+## 2026-05-05 Release AAB Rebuild for Used Version Code
+
+- Play Console rejected the previous bundle because `versionCode 2` was already used.
+- Updated `app/build.gradle`:
+  - `versionCode 3`
+  - `versionName 0.1.1` unchanged
+- Rebuilt the signed release AAB with:
+  - `.\gradlew.bat :app:bundleRelease --no-daemon`
+- Copied the fresh upload artifact to:
+  - `release/NeonWing-v0.1.1-code3-release-20260505.aab`
+- SHA-256:
+  - `A8CFDFD8F366FB9096250F10CB9196A5DD410CA64700F7842BD0DC58D9B970B7`

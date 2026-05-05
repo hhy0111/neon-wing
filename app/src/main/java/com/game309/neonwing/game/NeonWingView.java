@@ -329,7 +329,9 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
                 return true;
             }
             if (astraButton.contains(x, y)) {
-                showEconomyResult(repository.buyAstraWithGems(), "아스트라 해금 완료", "보석 120개가 필요합니다");
+                if (!repository.isAstraOwned()) {
+                    buy(ProductIds.PREMIUM_SHIP_ASTRA);
+                }
                 return true;
             }
             if (starterButton.contains(x, y)) {
@@ -417,6 +419,11 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
             @Override
             public void onPurchased(String productId) {
                 setStatus("구매 보상이 지급되었습니다");
+            }
+
+            @Override
+            public void onPurchasePending(String productId) {
+                setStatus("결제 완료 대기 중입니다");
             }
 
             @Override
@@ -670,7 +677,7 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
         }
         if (missileTimer <= 0f) {
             fireMissiles();
-            missileTimer = Math.max(0.38f, 1.03f - repository.getMissileLevel() * 0.032f);
+            missileTimer = Math.max(0.4f, 1.05f - repository.getMissileLevel() * 0.03f);
         }
         if (laserTimer <= 0f) {
             fireLaser();
@@ -679,11 +686,11 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
         if (spawnTimer <= 0f) {
             spawnEnemyWave(false);
             float interval = Math.max(0.26f, 1.0f - runTime * 0.0065f);
-            spawnTimer = interval + random.nextFloat() * 0.18f;
+            spawnTimer = Math.max(0.24f, interval - premiumChallengeBonus() * 0.08f) + random.nextFloat() * 0.18f;
         }
         if (bossTimer <= 0f) {
             spawnEnemyWave(true);
-            bossTimer = 44f + random.nextFloat() * 14f;
+            bossTimer = Math.max(32f, 44f - premiumChallengeBonus() * 22f) + random.nextFloat() * 14f;
         }
 
         updateBullets(dt);
@@ -715,16 +722,16 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
             return;
         }
         int missile = repository.getMissileLevel();
-        float damage = 36f + missile * 12f;
+        float damage = 34f + missile * 11f;
         int count = 1 + (missile >= 3 ? 1 : 0) + (missile >= 6 ? 1 : 0) + (repository.isAstraOwned() ? 1 : 0);
         for (int i = 0; i < count; i++) {
             float spread = (i - (count - 1) * 0.5f) * 20f * unit;
-            float damageScale = i == 0 ? 1f : 0.82f;
+            float damageScale = i == 0 ? 1f : 0.78f;
             addMissile(player.x + spread, player.y - 12f * unit, target, damage * damageScale);
         }
         if (missile >= 5) {
-            addMissile(player.x - 42f * unit, player.y + 2f * unit, target, damage * 0.36f);
-            addMissile(player.x + 42f * unit, player.y + 2f * unit, target, damage * 0.36f);
+            addMissile(player.x - 42f * unit, player.y + 2f * unit, target, damage * 0.32f);
+            addMissile(player.x + 42f * unit, player.y + 2f * unit, target, damage * 0.32f);
         }
     }
 
@@ -822,9 +829,10 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
         if (width == 0) {
             return;
         }
+        float premiumChallenge = premiumChallengeBonus();
         if (elite) {
             Enemy boss = makeEnemy(3, width * (0.24f + random.nextFloat() * 0.52f), -54f * unit);
-            boss.hp *= 2.2f + runTime / 120f;
+            boss.hp *= 2.2f + runTime / 120f + premiumChallenge * 0.65f;
             boss.maxHp = boss.hp;
             enemies.add(boss);
             setStatus("엘리트 접근");
@@ -834,7 +842,8 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
                 + (runTime > 25f ? 1 : 0)
                 + (runTime > 55f ? random.nextInt(2) : 0)
                 + (runTime > 95f ? 1 : 0)
-                + (runTime > 145f ? random.nextInt(2) : 0);
+                + (runTime > 145f ? random.nextInt(2) : 0)
+                + (premiumChallenge > 0f && random.nextFloat() < premiumChallenge * 1.8f ? 1 : 0);
         for (int i = 0; i < count; i++) {
             int roll = random.nextInt(100);
             int type = roll < 52 ? 0 : roll < 78 ? 1 : roll < 93 ? 2 : 3;
@@ -845,7 +854,7 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
     }
 
     private Enemy makeEnemy(int type, float x, float y) {
-        float difficulty = 1f + runTime * 0.015f + score * 0.00014f;
+        float difficulty = (1f + runTime * 0.015f + score * 0.00014f) * (1f + premiumChallengeBonus() * 0.85f);
         Enemy enemy = new Enemy();
         enemy.type = type;
         enemy.x = x;
@@ -875,6 +884,10 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
         }
         enemy.maxHp = enemy.hp;
         return enemy;
+    }
+
+    private float premiumChallengeBonus() {
+        return repository.isAstraOwned() ? 0.08f : 0f;
     }
 
     private void updateBullets(float dt) {
@@ -1267,10 +1280,7 @@ public class NeonWingView extends SurfaceView implements SurfaceHolder.Callback,
         drawUpgradeButton(canvas, missileButton, "미사일", repository.getMissileLevel(), repository.missileUpgradeCost(), GOLD);
         drawUpgradeButton(canvas, droneButton, "드론", repository.getDroneLevel(), repository.droneUpgradeCost(), WHITE);
         drawUpgradeButton(canvas, magnetButton, "자석", repository.getMagnetLevel(), repository.magnetUpgradeCost(), BLUE);
-        drawPurchaseButton(canvas, astraButton, "아스트라 기체", repository.isAstraOwned() ? "보유 중" : "", MAGENTA);
-        if (!repository.isAstraOwned()) {
-            drawCurrencyAmount(canvas, "gem", 120, astraButton.right - 76f * unit, astraButton.centerY() + 4f * unit, 13f * unit, Paint.Align.LEFT);
-        }
+        drawPurchaseButton(canvas, astraButton, "아스트라 기체", repository.isAstraOwned() ? "보유 중" : billingGateway.priceLabel(ProductIds.PREMIUM_SHIP_ASTRA), MAGENTA);
         drawPurchaseButton(canvas, starterButton, "스타터 패키지", billingGateway.priceLabel(ProductIds.STARTER_PACK), GOLD);
         drawPurchaseButton(canvas, removeAdsButton, "광고 제거", repository.hasRemovedAds() ? "보유 중" : billingGateway.priceLabel(ProductIds.REMOVE_ADS), CYAN);
         drawPurchaseButton(canvas, passButton, "월간 보급 패스", repository.hasSupplyPass() ? "활성화" : billingGateway.priceLabel(ProductIds.MONTHLY_SUPPLY_PASS), MAGENTA);

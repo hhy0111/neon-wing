@@ -131,7 +131,7 @@
       missile: "micro_cyan",
       accent: colors.blue,
       passive: "이동 속도 +8%",
-      bonus: { speed: 0.08 },
+      bonus: { speed: 0.08, challenge: 0.04 },
       unlock: "최고 점수 250 이상",
       price: { coins: 1200 },
     },
@@ -143,7 +143,7 @@
       missile: "plasma_magenta",
       accent: colors.magenta,
       passive: "미사일 피해 +8%",
-      bonus: { missileDamage: 0.08, hp: 18 },
+      bonus: { missileDamage: 0.08, hp: 18, challenge: 0.08 },
       unlock: "보석 구매 또는 스타터 패키지",
       price: { gems: 120 },
     },
@@ -155,7 +155,7 @@
       missile: "cluster_orange",
       accent: colors.orange,
       passive: "최대 HP +18%",
-      bonus: { hpMultiplier: 0.18 },
+      bonus: { hpMultiplier: 0.18, challenge: 0.06 },
       unlock: "최고 점수 650 이상",
       price: { coins: 2400 },
     },
@@ -167,7 +167,7 @@
       missile: "emp_blue",
       accent: colors.cyan,
       passive: "보호막 개조 확률 증가",
-      bonus: { defenseBias: 0.18 },
+      bonus: { defenseBias: 0.18, challenge: 0.07 },
       unlock: "최고 점수 1100 이상",
       price: { gems: 80 },
     },
@@ -179,7 +179,7 @@
       missile: "rail_white",
       accent: colors.white,
       passive: "피격 무적 +20%",
-      bonus: { invuln: 0.2 },
+      bonus: { invuln: 0.2, challenge: 0.1 },
       unlock: "최고 점수 1600 이상",
       price: { coins: 4800 },
     },
@@ -191,7 +191,7 @@
       missile: "nova_gold",
       accent: colors.gold,
       passive: "노바 충전 +15%",
-      bonus: { novaCharge: 0.15 },
+      bonus: { novaCharge: 0.15, challenge: 0.12 },
       unlock: "최고 점수 2500 이상",
       price: { coins: 9000, gems: 180 },
     },
@@ -581,11 +581,11 @@
     }
     if (state.timers.spawn <= 0) {
       spawnWave(false);
-      state.timers.spawn = Math.max(0.26, 1.0 - state.time * 0.0065) + rng() * 0.18;
+      state.timers.spawn = Math.max(0.24, 1.0 - state.time * 0.0065 - currentShipChallengeBonus() * 0.08) + rng() * 0.18;
     }
     if (state.timers.elite <= 0) {
       spawnWave(true);
-      state.timers.elite = 44 + rng() * 14;
+      state.timers.elite = Math.max(32, 44 - currentShipChallengeBonus() * 22) + rng() * 14;
     }
     if (state.timers.supply <= 0) {
       spawnSupplyDrone();
@@ -648,13 +648,13 @@
     const barrageStacks = getRunStack("up_missile_barrage");
     const permanentTier = Math.max(0, save.missile - 1);
     const damageBonus = 1 + damageStacks * 0.32 + getRunStack("up_signature") * 0.22 + supernovaStacks * 0.15 + (ship.bonus.missileDamage || 0);
-    const baseDamage = (36 + save.missile * 12) * profile.damage * damageBonus;
+    const baseDamage = (34 + save.missile * 11) * profile.damage * damageBonus;
     const extra = getRunStack("up_missile_extra");
     const launchCount = (ship.missile === "micro_cyan" ? 2 : 1) + extra + (save.missile >= 3 ? 1 : 0) + (save.missile >= 6 ? 1 : 0);
     const powerTier = damageStacks + extra + getRunStack("up_missile_split") + homingStacks + supernovaStacks + barrageStacks + Math.min(8, permanentTier);
     for (let i = 0; i < launchCount; i++) {
       const spread = (i - (launchCount - 1) / 2) * (18 + Math.min(10, extra * 3));
-      const damageScale = i === 0 ? 1 : Math.max(0.58, 0.9 - extra * 0.05);
+      const damageScale = i === 0 ? 1 : Math.max(0.56, 0.86 - extra * 0.05);
       addMissile(state.player.x + spread, state.player.y - 12, target, baseDamage * damageScale, ship.missile, {
         powerTier,
         visualScale: 1 + Math.min(0.85, powerTier * 0.055),
@@ -670,7 +670,7 @@
         const side = i % 2 === 0 ? -1 : 1;
         const lane = Math.ceil((i + 1) / 2);
         const spread = side * (34 + lane * 10);
-        addMissile(state.player.x + spread, state.player.y + 2 + lane * 5, target, baseDamage * 0.34, ship.missile, {
+        addMissile(state.player.x + spread, state.player.y + 2 + lane * 5, target, baseDamage * 0.32, ship.missile, {
           mini: true,
           powerTier,
           visualScale: 0.64,
@@ -720,9 +720,10 @@
   }
 
   function spawnWave(elite) {
+    const challengeBonus = currentShipChallengeBonus();
     if (elite) {
       const e = makeEnemy(3, W * (0.24 + rng() * 0.52), -54);
-      e.hp *= 2.2 + state.time / 120;
+      e.hp *= 2.2 + state.time / 120 + challengeBonus * 0.65;
       e.maxHp = e.hp;
       state.enemies.push(e);
       setStatus("엘리트 접근");
@@ -732,7 +733,8 @@
       + (state.time > 25 ? 1 : 0)
       + (state.time > 55 ? Math.floor(rng() * 2) : 0)
       + (state.time > 95 ? 1 : 0)
-      + (state.time > 145 ? Math.floor(rng() * 2) : 0);
+      + (state.time > 145 ? Math.floor(rng() * 2) : 0)
+      + (challengeBonus > 0 && rng() < challengeBonus * 1.8 ? 1 : 0);
     for (let i = 0; i < count; i++) {
       const roll = rng() * 100;
       const type = roll < 52 ? 0 : roll < 78 ? 1 : roll < 93 ? 2 : 3;
@@ -747,7 +749,7 @@
   }
 
   function makeEnemy(type, x, y) {
-    const difficulty = 1 + state.time * 0.015 + state.score * 0.00014;
+    const difficulty = (1 + state.time * 0.015 + state.score * 0.00014) * (1 + currentShipChallengeBonus() * 0.85);
     const presets = [
       { r: 15, hp: 24, speed: 130, damage: 14 },
       { r: 18, hp: 48, speed: 92, damage: 12 },
@@ -1089,8 +1091,44 @@
     setStatus(reason);
   }
 
+  function buildFallbackRewardChoices(rareBoost) {
+    const level = Math.max(1, state.run.upgradeLevel);
+    const timeBonus = Math.floor(state.time * 0.45);
+    const scoreReward = 120 + level * 22 + timeBonus;
+    const coinReward = 16 + level * 4 + Math.floor(timeBonus * 0.08);
+    const hybridScore = Math.round(scoreReward * 0.65);
+    const hybridCoins = Math.max(10, Math.round(coinReward * 0.7));
+    return [
+      {
+        id: `bonus_score_${level}`,
+        label: "전투 데이터",
+        desc: `즉시 점수 +${scoreReward}`,
+        rarity: rareBoost ? "희귀" : "일반",
+        reward: { score: scoreReward },
+        tags: ["bonus"],
+      },
+      {
+        id: `bonus_coin_${level}`,
+        label: "보급 크레딧",
+        desc: `즉시 코인 +${coinReward}`,
+        rarity: "일반",
+        reward: { coins: coinReward },
+        tags: ["bonus"],
+      },
+      {
+        id: `bonus_salvage_${level}`,
+        label: "잔해 매각",
+        desc: `즉시 점수 +${hybridScore}, 코인 +${hybridCoins}`,
+        rarity: rareBoost || state.time > 150 ? "희귀" : "일반",
+        reward: { score: hybridScore, coins: hybridCoins },
+        tags: ["bonus"],
+      },
+    ];
+  }
+
   function buildUpgradeChoices(rareBoost) {
     const available = runUpgradePool.filter((u) => getRunStack(u.id) < u.max);
+    if (!available.length) return buildFallbackRewardChoices(rareBoost);
     const chosen = [];
     const ship = currentShip();
     const weighted = [];
@@ -1112,34 +1150,62 @@
         if (weighted[i] === pick) weighted.splice(i, 1);
       }
     }
-    return chosen;
+    return chosen.length ? chosen : buildFallbackRewardChoices(rareBoost);
+  }
+
+  function applyChoiceReward(choice) {
+    if (!choice.reward) return;
+    const { score = 0, coins = 0, gems = 0 } = choice.reward;
+    const parts = [];
+    if (score > 0) {
+      state.score += score;
+      parts.push(`점수 +${score}`);
+    }
+    if (coins > 0) {
+      save.coins += coins;
+      parts.push(`코인 +${coins}`);
+    }
+    if (gems > 0) {
+      save.gems += gems;
+      parts.push(`보석 +${gems}`);
+    }
+    if (coins > 0 || gems > 0) persist();
+    if (parts.length) {
+      const color = gems > 0 ? colors.magenta : coins > 0 ? colors.green : colors.gold;
+      addText(state.player.x, state.player.y - 42, parts.join(" / "), color);
+    }
   }
 
   function chooseRunUpgrade(index) {
     const choice = state.run.choices[index];
     if (!choice) return;
-    state.run.stacks[choice.id] = getRunStack(choice.id) + 1;
     state.run.lastUpgrade = choice.label;
-    if (choice.id === "up_drone_wing") {
-      state.player.drone = true;
-      state.player.droneTime += 18;
-    }
-    if (choice.id === "up_shield_regen") {
-      state.run.shieldReady = Math.max(state.run.shieldReady, 1);
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 18);
-    }
-    if (choice.id === "up_nova_charge") {
-      state.player.nova = Math.min(1, state.player.nova + 0.16);
-    }
-    if (choice.tags.includes("missile")) {
-      state.timers.missile = Math.min(state.timers.missile, 0.08);
-      missileUpgradeShowcase(choice);
+    const isRewardChoice = Boolean(choice.reward);
+    if (isRewardChoice) {
+      applyChoiceReward(choice);
+    } else {
+      state.run.stacks[choice.id] = getRunStack(choice.id) + 1;
+      if (choice.id === "up_drone_wing") {
+        state.player.drone = true;
+        state.player.droneTime += 18;
+      }
+      if (choice.id === "up_shield_regen") {
+        state.run.shieldReady = Math.max(state.run.shieldReady, 1);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 18);
+      }
+      if (choice.id === "up_nova_charge") {
+        state.player.nova = Math.min(1, state.player.nova + 0.16);
+      }
+      if (choice.tags.includes("missile")) {
+        state.timers.missile = Math.min(state.timers.missile, 0.08);
+        missileUpgradeShowcase(choice);
+      }
     }
     state.mode = "playing";
     state.run.choices = [];
     screenFlash(rarityColor(choice.rarity), 0.16);
     burst(state.player.x, state.player.y, rarityColor(choice.rarity), 24, 150);
-    setStatus(`${choice.label} 적용`);
+    setStatus(isRewardChoice ? `${choice.label} 획득` : `${choice.label} 적용`);
   }
 
   function missileUpgradeShowcase(choice) {
@@ -1564,7 +1630,7 @@
       ctx.fillText(u.rarity, W * 0.08 + 18, y + 20);
       ctx.fillStyle = colors.white;
       ctx.font = "bold 16px \"Malgun Gothic\", Arial";
-      ctx.fillText(`${u.label}  Lv.${getRunStack(u.id) + 1}`, W * 0.08 + 18, y + 42);
+      ctx.fillText(u.reward ? u.label : `${u.label}  Lv.${getRunStack(u.id) + 1}`, W * 0.08 + 18, y + 42);
       ctx.fillStyle = "rgba(220,242,255,0.82)";
       ctx.font = "12px \"Malgun Gothic\", Arial";
       ctx.fillText(u.desc, W * 0.08 + 18, y + 61);
@@ -2395,6 +2461,10 @@
     return ships[save.selectedShip] || ships.neon_wing;
   }
 
+  function currentShipChallengeBonus() {
+    return currentShip().bonus.challenge || 0;
+  }
+
   function loadImageAssets() {
     for (const [stage, layers] of Object.entries(imageSources.backgrounds)) {
       for (const [layer, src] of Object.entries(layers)) {
@@ -2701,7 +2771,7 @@
     score: state.score,
     kills: state.kills,
     phase: currentPhase().label,
-    ship: { id: save.selectedShip, name: currentShip().label, missile: missileProfiles[currentShip().missile].label },
+    ship: { id: save.selectedShip, name: currentShip().label, missile: missileProfiles[currentShip().missile].label, challenge: round(currentShipChallengeBonus()) },
     assets: {
       loaded: assetStats.loaded,
       total: assetStats.total,
@@ -2716,7 +2786,7 @@
       fieldEnergyNeeded: round(state.run.fieldEnergyNeeded),
       upgradeLevel: state.run.upgradeLevel,
       stacks: state.run.stacks,
-      choices: state.run.choices.map((u) => ({ id: u.id, label: u.label, rarity: u.rarity })),
+      choices: state.run.choices.map((u) => ({ id: u.id, label: u.label, rarity: u.rarity, reward: u.reward || null })),
       shieldReady: state.run.shieldReady,
     },
     leaderboard: {
